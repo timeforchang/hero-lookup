@@ -14,7 +14,6 @@ public class MainActivity extends AppCompatActivity {
     private CameraPreview mPreview;
     private Context myContext;
     private LinearLayout cameraPreview;
-    private SurfaceView surfaceView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
