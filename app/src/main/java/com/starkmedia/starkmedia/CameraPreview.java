@@ -143,7 +143,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         public void onPreviewFrame(byte[] data, Camera camera) {
 
             //create a string  from the byte array
-            String imageBytes = data.toString();
             YuvImage im = new YuvImage(data, ImageFormat.NV21, width, height, null);
             int quality = 90;
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -156,40 +155,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
                 e.printStackTrace();
             }
 
-            try {
-                // Instantiates a client
-                try (ImageAnnotatorClient client = ImageAnnotatorClient.create()) {
-                    // Build the image
-                    Image image = Image.newBuilder().setContent(contents).build();
+            ((MainActivity) getContext()).setImageBytes(contents);
 
-                    // Create the request with the image and the specified feature: web detection
-                    AnnotateImageRequest request = AnnotateImageRequest.newBuilder()
-                            .addFeatures(Feature.newBuilder().setType(Type.WEB_DETECTION))
-                            .setImage(image)
-                            .build();
-
-                    // Perform the request
-                    BatchAnnotateImagesResponse response = client.batchAnnotateImages(Arrays.asList(request));
-
-                    // Display the results
-                    List<AnnotateImageResponse> responses = response.getResponsesList();
-                    for (AnnotateImageResponse res : responses) {
-                        if (res.hasError()) {
-                            System.out.println("yikes");
-                        } else {
-                            WebDetection annotation = res.getWebDetection();
-                            String description = annotation.getWebEntities(0).getDescription();
-                            ((MainActivity) getContext()).setImageBytes(description);
-                            System.out.println(description);
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-
-            //use the data
+            // restart camera
             camera.startPreview();
         }
     };

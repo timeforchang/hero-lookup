@@ -10,6 +10,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import com.google.cloud.vision.v1.*;
+import com.google.protobuf.ByteString;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -127,11 +132,42 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void setImageBytes(final String data) {
+    public void setImageBytes(final ByteString data) {
         MainActivity.this.runOnUiThread(new Runnable() {
+
             @Override
             public void run() {
-                byteString.setText((data));
+                try {
+                    // Instantiates a client
+                    try (ImageAnnotatorClient client = ImageAnnotatorClient.create()) {
+                        // Build the image
+                        Image image = Image.newBuilder().setContent(data).build();
+
+                        // Create the request with the image and the specified feature: web detection
+                        AnnotateImageRequest request = AnnotateImageRequest.newBuilder()
+                                .addFeatures(Feature.newBuilder().setType(Feature.Type.WEB_DETECTION))
+                                .setImage(image)
+                                .build();
+
+                        // Perform the request
+                        BatchAnnotateImagesResponse response = client.batchAnnotateImages(Arrays.asList(request));
+
+                        // Display the results
+                        List<AnnotateImageResponse> responses = response.getResponsesList();
+                        for (AnnotateImageResponse res : responses) {
+                            if (res.hasError()) {
+                                System.out.println("yikes");
+                            } else {
+                                WebDetection annotation = res.getWebDetection();
+                                String description = annotation.getWebEntities(0).getDescription();
+                                System.out.println(description);
+                                byteString.setText(description);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
