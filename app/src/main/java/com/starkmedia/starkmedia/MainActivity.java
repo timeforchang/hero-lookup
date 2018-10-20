@@ -21,6 +21,9 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String CLOUD_VISION_API_KEY = BuildConfig.API_KEY;
+    private static final String MARVEL_API_KEY = BuildConfig.MARVEL_API_KEY;
+
     private Camera camera;
     private CameraPreview cameraPreview;
     private Context myContext;
@@ -28,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView byteString;
     public int cameraWidth;
     public int cameraHeight;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
