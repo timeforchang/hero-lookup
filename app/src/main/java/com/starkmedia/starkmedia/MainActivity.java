@@ -1,22 +1,36 @@
 package com.starkmedia.starkmedia;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.ImageFormat;
+import android.graphics.*;
 import android.hardware.Camera;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import com.google.api.client.extensions.android.json.AndroidJsonFactory;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.services.vision.v1.Vision;
+import com.google.api.services.vision.v1.VisionRequestInitializer;
+//import com.google.api.services.vision.v1.model.BatchAnnotateImagesResponse;
+import com.google.api.services.vision.v1.model.WebDetection;
 import com.google.cloud.vision.v1.*;
 import com.google.protobuf.ByteString;
+import com.google.api.services.vision.v1.VisionRequestInitializer;
+import com.google.api.services.vision.v1.model.AnnotateImageRequest;
+import com.google.api.services.vision.v1.model.BatchAnnotateImagesRequest;
+
+import com.google.api.services.vision.v1.model.EntityAnnotation;
+import com.google.api.services.vision.v1.model.Feature;
+import com.google.api.services.vision.v1.model.Image;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,14 +63,13 @@ public class MainActivity extends AppCompatActivity {
         Camera.Parameters params = camera.getParameters();
         params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
         camera.setParameters(params);
+        cameraHeight = camera.getParameters().getPreviewSize().height;
+        cameraWidth = camera.getParameters().getPreviewSize().width;
 
         byteString = findViewById(R.id.byteString);
         cameraPreviewContainer = findViewById(R.id.cPreview);
         cameraPreview = new CameraPreview(myContext, camera);
-        cameraHeight = cameraPreview.getHeight();
-        cameraWidth = cameraPreview.getWidth();
         cameraPreviewContainer.addView(cameraPreview);
-
 
         camera.startPreview();
     }
@@ -152,46 +165,79 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 if (i > SECOND_LAG * 30) {
+                    byteString.setText("hello there");
                     try {
-                        // Instantiates a client
-                        try (ImageAnnotatorClient client = ImageAnnotatorClient.create()) {
-                            Bitmap bitmap = Bitmap.createBitmap(cameraWidth, cameraHeight,
-                                    Bitmap.Config.ARGB_8888);
-                            bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(data));
+                        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                                .permitAll().build();
+                        StrictMode.setThreadPolicy(policy);
 
-                            bitmap = scaleBitmapDown(bitmap, 1200);
+                        Vision.Builder visionBuilder = new Vision.Builder(
+                                new NetHttpTransport(),
+                                new AndroidJsonFactory(),
+                                null);
 
-                            // Convert the bitmap to a JPEG
-                            // Just in case it's a format that Android understands but Cloud Vision
-                            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream);
-                            ByteString contents = ByteString.readFrom(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
+                        visionBuilder.setVisionRequestInitializer(
+                                new VisionRequestInitializer(CLOUD_VISION_API_KEY));
 
-                            // Build the image
-                            Image image = Image.newBuilder().setContent(contents).build();
+                        Vision vision = visionBuilder.build();
 
-                            // Create the request with the image and the specified feature: web detection
-                            AnnotateImageRequest request = AnnotateImageRequest.newBuilder()
-                                    .addFeatures(Feature.newBuilder().setType(Feature.Type.WEB_DETECTION))
-                                    .setImage(image)
-                                    .build();
+                        YuvImage im = new YuvImage(data, ImageFormat.NV21, cameraWidth, cameraHeight, null);
+                        int quality = 70;
+                        ByteArrayOutputStream out = new ByteArrayOutputStream();
+                        Rect rect = new Rect(0, 0, cameraWidth, cameraHeight);
+                        im.compressToJpeg(rect, quality, out);
+                        byte[] imageBytes = out.toByteArray();
 
-                            // Perform the request
-                            BatchAnnotateImagesResponse response = client.batchAnnotateImages(Arrays.asList(request));
 
-                            // Display the results
-                            List<AnnotateImageResponse> responses = response.getResponsesList();
-                            for (AnnotateImageResponse res : responses) {
-                                if (res.hasError()) {
-                                    System.out.println("yikes");
-                                } else {
-                                    WebDetection annotation = res.getWebDetection();
-                                    String description = annotation.getWebEntities(0).getDescription();
-                                    System.out.println(description);
-                                    byteString.setText(description);
-                                }
+                        /*BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+                        bitmapOptions.inSampleSize = 10;
+
+                        Bitmap bitmap = BitmapFactory.decodeStream(new ByteArrayInputStream(out.toByteArray()), null, bitmapOptions);
+
+                        bitmap = scaleBitmapDown(bitmap, 1200);
+
+                        // Convert the bitmap to a JPEG
+                        // Just in case it's a format that Android understands but Cloud Vision
+                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream);
+                        byte[] imageBytes = byteArrayOutputStream.toByteArray();*/
+                        // Build the image
+                        Image image = new Image();
+
+                        image.encodeContent(imageBytes);
+
+
+                        // Create the request with the image and the specified feature: web detection
+                        AnnotateImageRequest request = new AnnotateImageRequest();
+                        request.setImage(image);
+                        request.setFeatures(new ArrayList<Feature>() {{
+                            Feature labelDetection = new Feature();
+                            labelDetection.setType("WEB_DETECTION");
+                            labelDetection.setMaxResults(10);
+                            add(labelDetection);
+                        }});
+
+                        BatchAnnotateImagesRequest batchRequest =
+                                new BatchAnnotateImagesRequest();
+
+                        batchRequest.setRequests(Arrays.asList(request));
+
+                        com.google.api.services.vision.v1.model.BatchAnnotateImagesResponse batchResponse =
+                                vision.images().annotate(batchRequest).execute();
+
+                        // Display the results
+                        List<com.google.api.services.vision.v1.model.AnnotateImageResponse> responses = batchResponse.getResponses();
+                        for (com.google.api.services.vision.v1.model.AnnotateImageResponse res : responses) {
+                            if (res.getError() != null) {
+                                System.out.println("yikes");
+                            } else {
+                                WebDetection annotation = res.getWebDetection();
+                                String description = annotation.getWebEntities().get(0).getDescription();
+                                System.out.println(description);
+                                byteString.setText(description);
                             }
                         }
+
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
