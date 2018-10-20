@@ -1,6 +1,7 @@
 package com.starkmedia.starkmedia;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.os.Handler;
@@ -13,6 +14,8 @@ import android.widget.TextView;
 import com.google.cloud.vision.v1.*;
 import com.google.protobuf.ByteString;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,6 +26,8 @@ public class MainActivity extends AppCompatActivity {
     private Context myContext;
     private LinearLayout cameraPreviewContainer;
     private TextView byteString;
+    public int cameraWidth;
+    public int cameraHeight;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
         byteString = findViewById(R.id.byteString);
         cameraPreviewContainer = findViewById(R.id.cPreview);
         cameraPreview = new CameraPreview(myContext, camera);
+        cameraHeight = cameraPreview.getHeight();
+        cameraWidth = cameraPreview.getWidth();
         cameraPreviewContainer.addView(cameraPreview);
 
 
@@ -134,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
 
     int i = 0;
     final int SECOND_LAG = 10;
-    public void setImageBytes(final ByteString data) {
+    public void setImageBytes(final byte[] data) {
         MainActivity.this.runOnUiThread(new Runnable() {
 
             @Override
@@ -143,8 +150,22 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         // Instantiates a client
                         try (ImageAnnotatorClient client = ImageAnnotatorClient.create()) {
+                            Bitmap bitmap = Bitmap.createBitmap(cameraWidth, cameraHeight,
+                                    Bitmap.Config.ARGB_8888);
+                            bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(data));
+
+                            bitmap = scaleBitmapDown(bitmap, 1200);
+
+                            // Convert the bitmap to a JPEG
+                            // Just in case it's a format that Android understands but Cloud Vision
+                            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream);
+                            byte[] imageBytes = byteArrayOutputStream.toByteArray();
+
+
+                            ByteString img = null;
                             // Build the image
-                            Image image = Image.newBuilder().setContent(data).build();
+                            Image image = Image.newBuilder().setContent(img).build();
 
                             // Create the request with the image and the specified feature: web detection
                             AnnotateImageRequest request = AnnotateImageRequest.newBuilder()
@@ -175,6 +196,26 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     i++;
                 }
+            }
+
+            private Bitmap scaleBitmapDown(Bitmap bitmap, int maxDimension) {
+
+                int originalWidth = bitmap.getWidth();
+                int originalHeight = bitmap.getHeight();
+                int resizedWidth = maxDimension;
+                int resizedHeight = maxDimension;
+
+                if (originalHeight > originalWidth) {
+                    resizedHeight = maxDimension;
+                    resizedWidth = (int) (resizedHeight * (float) originalWidth / (float) originalHeight);
+                } else if (originalWidth > originalHeight) {
+                    resizedWidth = maxDimension;
+                    resizedHeight = (int) (resizedWidth * (float) originalHeight / (float) originalWidth);
+                } else if (originalHeight == originalWidth) {
+                    resizedHeight = maxDimension;
+                    resizedWidth = maxDimension;
+                }
+                return Bitmap.createScaledBitmap(bitmap, resizedWidth, resizedHeight, false);
             }
         });
     }

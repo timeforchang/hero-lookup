@@ -75,8 +75,7 @@ import java.util.regex.Pattern;
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private SurfaceHolder mHolder;
     private Camera mCamera;
-    private int width;
-    private int height;
+
 
     public CameraPreview(Context context, Camera camera) {
         super(context);
@@ -123,8 +122,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
         refreshCamera(mCamera);
-        width = w;
-        height = h;
     }
 
     public void setCamera(Camera camera) {
@@ -142,7 +139,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         @Override
         public void onPreviewFrame(byte[] data, Camera camera) {
 
-            //create a string  from the byte array
+            /*create a string  from the byte array
             YuvImage im = new YuvImage(data, ImageFormat.NV21, width, height, null);
             int quality = 90;
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -153,9 +150,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
                 contents = ByteString.readFrom(new ByteArrayInputStream(out.toByteArray()));
             } catch (IOException e) {
                 e.printStackTrace();
-            }
+            }*/
 
-            ((MainActivity) getContext()).setImageBytes(contents);
+            ((MainActivity) getContext()).setImageBytes(data);
 
             // restart camera
             camera.startPreview();
