@@ -15,6 +15,10 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+        buildTypes.each {
+            it.buildConfigField 'String', 'API_KEY', "\"AIzaSyD8koBB4whWRFnL9JVoRHp5DHpzJe8wiZo\""
+            it.buildConfigField 'String', 'MARVEL_API_KEY', "\"abde132cb2b298982ffd43c9fa565b8b\""
+        }
     }
 
     configurations.all {
