@@ -5,14 +5,16 @@ import android.hardware.Camera;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.SurfaceView;
 import android.widget.LinearLayout;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Camera mCamera;
+    private Camera camera;
     private CameraPreview mPreview;
     private Context myContext;
     private LinearLayout cameraPreview;
+    private SurfaceView surfaceView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,22 +23,29 @@ public class MainActivity extends AppCompatActivity {
 
         myContext = this;
 
-        mCamera =  Camera.open();
-        mCamera.setDisplayOrientation(90);
-        cameraPreview = (LinearLayout) findViewById(R.id.cPreview);
-        mPreview = new CameraPreview(myContext, mCamera);
+        try {
+            releaseCamera();
+            camera = Camera.open();
+            camera.setDisplayOrientation(90);
+        } catch (Exception e) {
+            Log.e(getString(R.string.app_name), "failed to open Camera");
+            e.printStackTrace();
+        }
+
+        cameraPreview = findViewById(R.id.cPreview);
+        mPreview = new CameraPreview(myContext, camera);
         cameraPreview.addView(mPreview);
 
-        mCamera.startPreview();
+        camera.startPreview();
     }
 
     public void onResume() {
 
         super.onResume();
-        if(mCamera == null) {
-            mCamera = Camera.open();
-            mCamera.setDisplayOrientation(90);
-            mPreview.refreshCamera(mCamera);
+        if(camera == null) {
+            camera = Camera.open();
+            camera.setDisplayOrientation(90);
+            mPreview.refreshCamera(camera);
             Log.d("nu", "null");
         }else {
             Log.d("nu","no null");
@@ -51,13 +60,14 @@ public class MainActivity extends AppCompatActivity {
         releaseCamera();
     }
 
+
     private void releaseCamera() {
         // stop and release camera
-        if (mCamera != null) {
-            mCamera.stopPreview();
-            mCamera.setPreviewCallback(null);
-            mCamera.release();
-            mCamera = null;
+        if (camera != null) {
+            camera.stopPreview();
+            camera.setPreviewCallback(null);
+            camera.release();
+            camera = null;
         }
     }
 }
