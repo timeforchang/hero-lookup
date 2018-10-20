@@ -5,7 +5,6 @@ import android.hardware.Camera;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.SurfaceView;
 import android.widget.LinearLayout;
 
 public class MainActivity extends AppCompatActivity {
@@ -26,6 +25,12 @@ public class MainActivity extends AppCompatActivity {
             releaseCamera();
             camera = Camera.open();
             camera.setDisplayOrientation(90);
+
+            //set camera to continually auto-focus
+            Camera.Parameters params = camera.getParameters();
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+            camera.setParameters(params);
+
         } catch (Exception e) {
             Log.e(getString(R.string.app_name), "failed to open Camera");
             e.printStackTrace();
