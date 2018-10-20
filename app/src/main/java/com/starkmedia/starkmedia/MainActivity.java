@@ -14,6 +14,7 @@ import android.widget.TextView;
 import com.google.cloud.vision.v1.*;
 import com.google.protobuf.ByteString;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -160,12 +161,10 @@ public class MainActivity extends AppCompatActivity {
                             // Just in case it's a format that Android understands but Cloud Vision
                             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                             bitmap.compress(Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream);
-                            byte[] imageBytes = byteArrayOutputStream.toByteArray();
+                            ByteString contents = ByteString.readFrom(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
 
-
-                            ByteString img = null;
                             // Build the image
-                            Image image = Image.newBuilder().setContent(img).build();
+                            Image image = Image.newBuilder().setContent(contents).build();
 
                             // Create the request with the image and the specified feature: web detection
                             AnnotateImageRequest request = AnnotateImageRequest.newBuilder()
