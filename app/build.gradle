@@ -45,10 +45,10 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-    compile 'com.google.api-client:google-api-client-android:1.23.0' exclude module: 'httpclient'
-    compile 'com.google.http-client:google-http-client-gson:1.23.0' exclude module: 'httpclient'
-    compile 'com.google.apis:google-api-services-vision:v1-rev369-1.23.0'
-    compile group: 'com.google.cloud', name: 'google-cloud-storage', version: '1.43.0'
-    compile group: 'com.google.cloud', name: 'google-cloud-vision', version: '1.43.0'
+    implementation 'com.google.api-client:google-api-client-android:1.23.0' exclude module: 'httpclient'
+    implementation 'com.google.http-client:google-http-client-gson:1.23.0' exclude module: 'httpclient'
+    implementation 'com.google.apis:google-api-services-vision:v1-rev369-1.23.0'
+    implementation group: 'com.google.cloud', name: 'google-cloud-storage', version: '1.43.0'
+    implementation group: 'com.google.cloud', name: 'google-cloud-vision', version: '1.43.0'
 }
 
